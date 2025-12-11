@@ -1,12 +1,26 @@
 <!DOCTYPE html>
 <html lang="ko" class="dark">
-  <head>
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>MU:ZEUM</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Jost:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Times+New+Roman&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+    <!-- React & Libraries (CDN) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-router-dom@6.22.0/umd/react-router-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind Config -->
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -19,10 +33,10 @@
             },
             colors: {
               background: "#121212",
-              surface: "#1E1E1E", // Slightly lighter for cards/sections
+              surface: "#1E1E1E",
               border: "#2C2C2C",
-              primary: "#FEEA00", // Vibrant Yellow for actions
-              "primary-muted": "#E0C183", // Gold for branding
+              primary: "#FEEA00",
+              "primary-muted": "#E0C183",
               text: "#FFFFFF",
               "text-secondary": "#9E9E9E",
             },
@@ -30,10 +44,14 @@
         },
       };
     </script>
+
+    <!-- Global Styles -->
     <style>
       body {
         background-color: #121212;
         color: #ffffff;
+        margin: 0;
+        padding: 0;
       }
       .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -41,28 +59,855 @@
       .material-symbols-filled {
         font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
       }
-      /* Hide scrollbar for Chrome, Safari and Opera */
       .no-scrollbar::-webkit-scrollbar {
           display: none;
       }
-      /* Hide scrollbar for IE, Edge and Firefox */
       .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+      /* Prevent pull-to-refresh on mobile */
+      body {
+        overscroll-behavior-y: none;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6"
-  }
-}
-</script>
 </head>
-  <body>
+<body>
     <div id="root"></div>
-  </body>
+
+    <script type="text/babel">
+        // --- 1. Global Setup & Imports ---
+        const { useState, useEffect, useRef, createContext, useContext } = React;
+        const { HashRouter, Routes, Route, useNavigate, useLocation, useParams, Link } = ReactRouterDOM;
+
+        // --- 2. Mock Data ---
+        const mockProducts = [
+            {
+                id: '1',
+                title: '빈티지 꽃 도자기',
+                price: 34000,
+                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSV1yN9ChguxXJGQf-oq6ZfUOBL9hwjibv12dL-Chb-Ck1JUTCTJGm56Ij75orIqTlKDsWInrrMsu4DuFCudcheuYcv96BOH4BDDZ9A52jVwGnutG0qiQfFIPRc68AR-ptJIfNdQXXMR8B4-YMNY5YLatXYZIFtVXdp1IX5DzhNINSuLKp9VLKzVhB7ssMyXXua58kzSjPq1REW1gVj2gPzZjCxsEXqzcvcO3mWHWTaOTosaw440NfS6tVQZ0KYP9LzOhSTEIhOwkb',
+                category: '도자기',
+                isLiked: false
+            },
+            {
+                id: '2',
+                title: '고대 그리스 조각상',
+                price: 120000,
+                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD_yB_n_ParP5_S8o3_Yqt12chfXdAoV-4iNiucqZKCncbe_aaaeEXnkgzveKSiWXm64y2W6Js5g6Rf0OTNKfk3b-18NSh2NSlFwbVmPx7w8asxR3Tc_uDheTSKyQigwCWlAby_z1PoIkmx2TQ8Ag8RBM5_WwMgSewpbLAFY8-zhT3vY24Fozm4Bn0TuoHdm2sT6EgUWdyWCmNRTbgU8tp3DfhnEoo9uEaxaiwMZoQ-mHZe3joGF6TKH1K2CJk99aSQcAguI4axb0S-',
+                category: '조각',
+                isLiked: true
+            },
+            {
+                id: '3',
+                title: '모던 추상화 캔버스',
+                price: 85000,
+                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC7VCV4avmj1suVGVTLL8qjRY591c2lCNL6h7kvgp7X_5Qy2hsd7qSlilmxqhKV-UYp_2sxqI8XGHvAyclS8XK583BFNO3F0BfZPzBT3Ne8vSzNOLEPucA5LWF_oFnhb7zbtvPEekiRjQF9ptylziC4jcbw6ont0a5JMehmHMbDt4GEUpVVv_61XF_VlzbXITZjWkXfKwCpe5_eb0R-fbyxTXGBPfNP2ZK5s2UAW2FFHGeH1uAnkP5klln_KOjUF9bFx3tZi8Om70-V',
+                category: '회화',
+                isLiked: false
+            },
+            {
+                id: '4',
+                title: '이집트 유물 미니어처',
+                price: 49000,
+                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCg70n5iSBHocH4FPWFtk-5NmH9pS-SaNPpLEDeSowR-OfjxWJZ4uYqujj4P2ERSxG-yyYY9kxSitICLJCdYhUMNJHG5luAUCX9bh3fBIYBEbfkFwtEONuMnxn7F9OlKzblnAjiHD5op66MNdn4mGr45YvmaCvDVTIhOziF0mKMbMcXDmnPGg-0XtvTEi56RwbR5MrwQpCuNvRtBcdTbkIIGWNea5NW_lFcQ6xNJ5evSWYrWJ78J4XLAnvjgMSKKzqYuk4_qX1R-p9r',
+                category: '미니어처',
+                isLiked: false
+            }
+        ];
+        const ProductsContext = createContext(null);
+
+        // --- 3. Shared Components (Hooks & UI) ---
+
+        // Custom Hook for Natural Back Navigation
+        const useNaturalBack = () => {
+            const navigate = useNavigate();
+            const location = useLocation();
+
+            return () => {
+                const hubs = ['/wishlist', '/messages', '/profile', '/zeum'];
+                
+                if (hubs.includes(location.pathname)) {
+                    navigate('/home');
+                    return;
+                }
+
+                if (location.key !== 'default') {
+                    navigate(-1);
+                } else {
+                    navigate('/home', { replace: true });
+                }
+            };
+        };
+
+        const Header = ({ title, leftIcon = 'arrow_back_ios_new', onLeftClick, rightElements }) => {
+            const naturalBack = useNaturalBack();
+
+            const handleBack = () => {
+                if (onLeftClick) {
+                    onLeftClick();
+                } else {
+                    naturalBack();
+                }
+            };
+
+            return (
+                <header className="sticky top-0 z-20 flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border">
+                    <button onClick={handleBack} className="p-1 -ml-1 text-text">
+                        <span className="material-symbols-outlined">{leftIcon}</span>
+                    </button>
+                    {title && <h1 className="text-lg font-bold text-text absolute left-1/2 -translate-x-1/2">{title}</h1>}
+                    <div className="flex items-center space-x-2">
+                        {rightElements || <div className="w-6" />}
+                    </div>
+                </header>
+            );
+        };
+
+        const BottomNav = ({ theme = 'dark' }) => {
+            const navigate = useNavigate();
+            const location = useLocation();
+
+            const isActive = (path) => {
+                if (path === '/home') return location.pathname === '/home' || location.pathname === '/zeum';
+                return location.pathname === path;
+            };
+
+            const navBg = theme === 'light' ? 'bg-white border-gray-200' : 'bg-surface border-border';
+            const itemColor = theme === 'light' ? 'text-gray-400' : 'text-text-secondary';
+            const activeItemColor = theme === 'light' ? 'text-[#1A1E27]' : 'text-primary-muted';
+
+            return (
+                <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t z-30 pb-safe ${navBg}`}>
+                    <div className="flex justify-around py-3">
+                        <NavItem icon="search" label="검색" active={isActive('/filter')} onClick={() => navigate('/filter')} color={itemColor} activeColor={activeItemColor} />
+                        <NavItem icon="favorite" label="찜" active={isActive('/wishlist')} onClick={() => navigate('/wishlist')} color={itemColor} activeColor={activeItemColor} />
+                        <NavItem icon="home" label="홈" active={isActive('/home')} onClick={() => navigate('/home')} color={itemColor} activeColor={activeItemColor} />
+                        <NavItem icon="chat_bubble" label="메시지" active={isActive('/messages')} onClick={() => navigate('/messages')} color={itemColor} activeColor={activeItemColor} />
+                        <NavItem icon="person" label="마이 메뉴" active={isActive('/profile')} onClick={() => navigate('/profile')} color={itemColor} activeColor={activeItemColor} />
+                    </div>
+                </nav>
+            );
+        };
+
+        const NavItem = ({ icon, label, active, onClick, color, activeColor }) => (
+            <button onClick={onClick} className={`flex flex-col items-center space-y-1 ${active ? activeColor : color}`}>
+                <span className={`material-symbols-outlined ${active ? 'material-symbols-filled' : ''}`}>{icon}</span>
+                <span className="text-[10px]">{label}</span>
+            </button>
+        );
+
+        const PrimaryButton = ({ children, onClick, className = '' }) => (
+            <button 
+                onClick={onClick}
+                className={`w-full bg-primary text-background font-bold py-4 rounded-lg text-lg hover:brightness-110 transition-all ${className}`}
+            >
+                {children}
+            </button>
+        );
+
+        // --- 4. Screen Components ---
+
+        // LoadingScreen
+        const LoadingScreen = () => {
+            const navigate = useNavigate();
+
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    navigate('/splash');
+                }, 3000);
+                return () => clearTimeout(timer);
+            }, [navigate]);
+
+            return (
+                <div className="relative min-h-screen w-full flex flex-col items-center justify-center text-white p-6">
+                    <img alt="Background" className="absolute inset-0 w-full h-full object-cover -z-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGAsoJ1jbNarMf8vC58zh6VwpBQuKJgKW9igIuR4zAKJM9MeI8ATJk3OKHdghkPK-RtUVqwi6w3mS2l7NY_p1OdrX1TcqbZdbJFBwyFE3Q9V66bHegCLaChKIYSEDCpwBVGWtYbDTNCa4zWt8MdFi9HcQr_LkiWuSlaTsCTDzKSr_UVlBQJ7gmbehWw7OyD5xW6lDn2hkQjuLndZtc-ce75Se-HHLj5A1kDh3Em9ZZM8E7MwiFE1k-Wwtrv-TzCz66lqTBkuV-FZCW" />
+                    <div className="absolute inset-0 bg-black/50 -z-10"></div>
+                    <div className="flex flex-col items-center justify-center animate-pulse">
+                        <div className="w-24 h-24 mb-6 border-4 border-white flex items-center justify-center p-2">
+                            <span className="text-5xl font-serif font-bold">Z</span>
+                        </div>
+                        <h1 className="text-5xl font-bold tracking-widest text-white mb-2">MU:ZEUM</h1>
+                        <p className="text-white/80 text-sm tracking-wider font-sans">손안의 작은 박물관</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // SplashScreen
+        const SplashScreen = () => {
+            const navigate = useNavigate();
+            const [activeIndex, setActiveIndex] = useState(0);
+            const scrollRef = useRef(null);
+
+            const handleScroll = () => {
+                if (scrollRef.current) {
+                    const index = Math.round(scrollRef.current.scrollLeft / scrollRef.current.clientWidth);
+                    setActiveIndex(index);
+                }
+            };
+
+            const scrollToSlide = (index) => {
+                if (scrollRef.current) {
+                    scrollRef.current.scrollTo({
+                        left: index * scrollRef.current.clientWidth,
+                        behavior: 'smooth'
+                    });
+                }
+            };
+
+            const slides = [
+                {
+                    title: 'MU:',
+                    headline: '특별한 것들만 모이는\n손안의 작은 박물관',
+                    subhead: '더 이상 구하기 어려운 한정판 굿즈를\nMU:에서 찾아보세요.'
+                },
+                {
+                    title: 'ZEUM',
+                    headline: '당신의 후원으로\n희소가치를 소유하세요',
+                    subhead: '특별한 이야기와 가치가 담긴 굿즈를\n펀딩하세요.'
+                }
+            ];
+
+            return (
+                <div className="relative min-h-screen w-full bg-black text-white overflow-hidden font-sans touch-pan-x">
+                    <img alt="Background" className="absolute inset-0 w-full h-full object-cover -z-10 opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGAsoJ1jbNarMf8vC58zh6VwpBQuKJgKW9igIuR4zAKJM9MeI8ATJk3OKHdghkPK-RtUVqwi6w3mS2l7NY_p1OdrX1TcqbZdbJFBwyFE3Q9V66bHegCLaChKIYSEDCpwBVGWtYbDTNCa4zWt8MdFi9HcQr_LkiWuSlaTsCTDzKSr_UVlBQJ7gmbehWw7OyD5xW6lDn2hkQjuLndZtc-ce75Se-HHLj5A1kDh3Em9ZZM8E7MwiFE1k-Wwtrv-TzCz66lqTBkuV-FZCW" />
+                    <div className="absolute inset-0 bg-black/40 -z-10"></div>
+                    <div ref={scrollRef} onScroll={handleScroll} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar w-full h-screen scroll-smooth">
+                        {slides.map((slide, index) => (
+                            <div key={index} className="min-w-full w-full h-full flex flex-col items-center justify-center snap-center flex-shrink-0 p-8 pb-32">
+                                <div className="w-24 h-24 mb-6 border-[6px] border-white/90 flex items-center justify-center">
+                                    <span className="text-5xl font-serif font-bold italic pt-2 pr-1">Z</span>
+                                </div>
+                                <h1 className="text-5xl font-bold tracking-widest text-white mb-8 font-display">{slide.title}</h1>
+                                <p className="text-2xl font-bold text-center whitespace-pre-wrap leading-tight mb-4 drop-shadow-lg">{slide.headline}</p>
+                                <p className="text-white/80 text-sm text-center whitespace-pre-wrap leading-relaxed drop-shadow-md">{slide.subhead}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="absolute bottom-10 left-0 right-0 px-6 flex flex-col items-center z-20 pointer-events-none">
+                        <div className="flex space-x-3 mb-8 pointer-events-auto">
+                            {slides.map((_, i) => (
+                                <button key={i} onClick={() => scrollToSlide(i)} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'bg-[#E0C183] scale-125' : 'bg-white/40 hover:bg-white/60'}`} aria-label={`Go to slide ${i + 1}`} />
+                            ))}
+                        </div>
+                        <button onClick={() => navigate('/login')} className="w-full bg-[#E0C183] text-[#3E2B1D] font-bold py-4 rounded-lg text-lg hover:brightness-110 transition-all shadow-lg pointer-events-auto">시작하기</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // LoginScreen
+        const LoginScreen = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="relative min-h-screen w-full flex flex-col items-center justify-between text-white p-6">
+                    <img alt="Background" className="absolute inset-0 w-full h-full object-cover -z-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGAsoJ1jbNarMf8vC58zh6VwpBQuKJgKW9igIuR4zAKJM9MeI8ATJk3OKHdghkPK-RtUVqwi6w3mS2l7NY_p1OdrX1TcqbZdbJFBwyFE3Q9V66bHegCLaChKIYSEDCpwBVGWtYbDTNCa4zWt8MdFi9HcQr_LkiWuSlaTsCTDzKSr_UVlBQJ7gmbehWw7OyD5xW6lDn2hkQjuLndZtc-ce75Se-HHLj5A1kDh3Em9ZZM8E7MwiFE1k-Wwtrv-TzCz66lqTBkuV-FZCW" />
+                    <div className="absolute inset-0 bg-black/60 -z-10 backdrop-blur-[2px]"></div>
+                    <div className="flex-grow flex flex-col items-center justify-center text-center w-full max-w-xs">
+                        <div className="w-16 h-16 mb-6 border-2 border-white flex items-center justify-center">
+                            <span className="text-3xl font-serif">Z</span>
+                        </div>
+                        <h1 className="text-4xl font-bold tracking-[0.2em] text-white mb-2">MU:ZEUM</h1>
+                        <p className="text-white/80 text-xs mb-12">특별한 것들만 모이는 손안의 작은 박물관</p>
+                        <div className="w-full space-y-4">
+                            <input type="text" placeholder="사용자 이름 또는 이메일" className="w-full bg-white/10 text-white placeholder-white/50 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-white/50 backdrop-blur-sm" />
+                            <input type="password" placeholder="비밀번호" className="w-full bg-white/10 text-white placeholder-white/50 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-white/50 backdrop-blur-sm" />
+                        </div>
+                        <button onClick={() => navigate('/home')} className="w-full bg-white text-black font-bold py-3.5 rounded-lg mt-8 hover:bg-gray-100 transition-colors">로그인</button>
+                        <div className="flex justify-center space-x-6 text-sm text-white/70 mt-6">
+                            <button className="hover:text-white">회원가입</button>
+                            <span className="h-4 border-l border-white/30"></span>
+                            <button className="hover:text-white">비밀번호 찾기</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // CategoryChip Helper
+        const CategoryChip = ({ label, active }) => (
+            <button className={`whitespace-nowrap px-5 py-2 text-sm font-medium rounded-full transition-colors ${active ? 'bg-primary-muted text-background' : 'bg-surface text-text-secondary hover:bg-border'}`}>
+                {label}
+            </button>
+        );
+
+        // HomeScreen
+        const HomeScreen = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="pb-24">
+                    <header className="sticky top-0 bg-background/90 backdrop-blur-sm z-10 px-4 py-3 flex justify-between items-center border-b border-border">
+                        <div className="flex items-center space-x-1 cursor-pointer" onClick={() => navigate('/zeum')}>
+                            <div className="border border-white px-2 py-0.5">
+                                <h1 className="text-xl font-serif font-bold text-text tracking-wider">MU:</h1>
+                            </div>
+                            <span className="material-symbols-outlined text-text">expand_more</span>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <button onClick={() => navigate('/filter')}><span className="material-symbols-outlined">search</span></button>
+                            <button><span className="material-symbols-outlined">menu</span></button>
+                        </div>
+                    </header>
+                    <main className="px-4">
+                        <section className="mt-4 mb-8">
+                            <div className="relative aspect-[4/3] rounded-lg overflow-hidden group cursor-pointer">
+                                <img alt="Promotion" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpi4hXs4TQcCn0yMfJ-waIQUYXoQ2qljRIWjeVyliGl7H_lQepacCmq4r6falk8kLpFcZhlyqH_ccvuiw6EFRKWy_ArDu3GFb-Gk29QT4ivtYkrn05kK53s_RBgoFczRrlq0ZTUmDP4nsRHbYEEr6F1Jkdszky-MELVMhIp7s6oKMxC4kR32LBc7Ipt7V0neNRrzzFMQBlmsdudbSHuP7Uir7MgCbWhC5pUVDM43UNrC_Ohzr1NZ3VrJ7N1B2c87tITMSg8iaYFyPd" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
+                                    <h2 className="text-white text-2xl font-bold mb-2">국립중앙박물관 특별전</h2>
+                                    <p className="text-white/90 text-sm">신라의 황금 유물, 지금 만나보세요.</p>
+                                </div>
+                            </div>
+                            <div className="flex justify-center space-x-2 mt-4">
+                                <span className="block w-2 h-2 bg-primary-muted rounded-full"></span>
+                                <span className="block w-2 h-2 bg-surface rounded-full"></span>
+                                <span className="block w-2 h-2 bg-surface rounded-full"></span>
+                            </div>
+                        </section>
+                        <section className="mb-6 overflow-x-auto no-scrollbar">
+                            <div className="flex space-x-3 pb-2">
+                                <CategoryChip label="전체" active />
+                                <CategoryChip label="도자기" />
+                                <CategoryChip label="회화" />
+                                <CategoryChip label="조각" />
+                                <CategoryChip label="기타" />
+                            </div>
+                        </section>
+                        <section className="grid grid-cols-2 gap-x-4 gap-y-8">
+                            {mockProducts.map((product) => (
+                                <div key={product.id} className="space-y-3 cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
+                                    <div className="relative aspect-square rounded-lg overflow-hidden bg-surface">
+                                        <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                                        <button className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
+                                            <span className={`material-symbols-outlined text-xl ${product.isLiked ? 'text-primary-muted material-symbols-filled' : 'text-white'}`}>favorite</span>
+                                        </button>
+                                    </div>
+                                    <div className="px-1">
+                                        <h3 className="text-sm font-medium text-text truncate">{product.title}</h3>
+                                        <p className="text-base font-bold text-text mt-1">{product.price.toLocaleString()}원</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </section>
+                    </main>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        // ZeumScreen Helpers
+        const ProjectCard = ({ image, title, maker, daysLeft }) => (
+            <div className="flex flex-col cursor-pointer group">
+                <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100">
+                    <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <button className="absolute top-2 right-2 p-1.5 rounded-full bg-black/20 backdrop-blur-sm">
+                        <span className="material-symbols-outlined text-white text-base">favorite</span>
+                    </button>
+                    {daysLeft && (
+                        <div className="absolute bottom-2 left-2 bg-[#E53935] text-white text-[10px] font-bold px-2 py-1 rounded-md">
+                            {daysLeft}일 남음
+                        </div>
+                    )}
+                </div>
+                <h3 className="text-[15px] font-bold text-[#1A1E27] leading-tight mb-1 truncate">{title}</h3>
+                <p className="text-xs text-gray-500">{maker}</p>
+            </div>
+        );
+
+        // ZeumScreen
+        const ZeumScreen = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="flex flex-col min-h-screen bg-[#F5F7F9] pb-24 font-sans text-gray-900">
+                    <header className="sticky top-0 bg-white/95 backdrop-blur-sm z-20 px-4 py-3 flex justify-between items-center shadow-sm">
+                        <div className="flex items-center space-x-1 cursor-pointer" onClick={() => navigate('/home')}>
+                            <h1 className="text-2xl font-black tracking-tighter text-[#1A1E27]">ZEUM</h1>
+                            <span className="material-symbols-outlined text-[#1A1E27]">expand_more</span>
+                        </div>
+                        <div className="flex items-center space-x-4 text-[#1A1E27]">
+                            <button onClick={() => navigate('/filter')}><span className="material-symbols-outlined">search</span></button>
+                            <button onClick={() => navigate('/cart')}><span className="material-symbols-outlined">shopping_bag</span></button>
+                            <button><span className="material-symbols-outlined">menu</span></button>
+                        </div>
+                    </header>
+                    <main>
+                        <div className="relative w-full aspect-[4/3] bg-gray-200">
+                            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV5oPKxXm6XUa1vDbr210us0aVUhFtzpAyxk3r2gXt3u533vYXb5C_GlCTIArnBtDnuZzrHay4vytUL3awfDJtuntjUJk2zA1-qn9FtQzdBFsvvsU7-c_CmTJjAUg7P-cM4EIJyhr6VO2FIc76uo5IXKe34p0-HZrPQmv7onSwKEoQxCduoawxoXCMYxx1MIJqNtU7ErkCUtVSD1_HzLU5n7CtVqryxcFRapR5Nq04-CeuEWckCa92jLamN5XxZaAcop4b7It5JUYC" alt="Main Banner" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
+                                <h2 className="text-white text-2xl font-bold leading-tight mb-1">청자 상감운학문 매병 굿즈</h2>
+                                <p className="text-white/80 text-sm font-medium">국립박물관</p>
+                            </div>
+                            <div className="absolute bottom-6 right-6 flex space-x-2">
+                                <span className="w-2 h-2 rounded-full bg-white"></span>
+                                <span className="w-2 h-2 rounded-full bg-white/50"></span>
+                                <span className="w-2 h-2 rounded-full bg-white/50"></span>
+                            </div>
+                        </div>
+                        <section className="px-4 mt-8">
+                            <h2 className="text-xl font-bold text-[#1A1E27] mb-4">이런 프로젝트는 어떠세요?</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                <ProjectCard image="https://lh3.googleusercontent.com/aida-public/AB6AXuAV5oPKxXm6XUa1vDbr210us0aVUhFtzpAyxk3r2gXt3u533vYXb5C_GlCTIArnBtDnuZzrHay4vytUL3awfDJtuntjUJk2zA1-qn9FtQzdBFsvvsU7-c_CmTJjAUg7P-cM4EIJyhr6VO2FIc76uo5IXKe34p0-HZrPQmv7onSwKEoQxCduoawxoXCMYxx1MIJqNtU7ErkCUtVSD1_HzLU5n7CtVqryxcFRapR5Nq04-CeuEWckCa92jLamN5XxZaAcop4b7It5JUYC" title="청자 상감운학문 매병..." maker="국립박물관" />
+                                <ProjectCard image="https://lh3.googleusercontent.com/aida-public/AB6AXuC7VCV4avmj1suVGVTLL8qjRY591c2lCNL6h7kvgp7X_5Qy2hsd7qSlilmxqhKV-UYp_2sxqI8XGHvAyclS8XK583BFNO3F0BfZPzBT3Ne8vSzNOLEPucA5LWF_oFnhb7zbtvPEekiRjQF9ptylziC4jcbw6ont0a5JMehmHMbDt4GEUpVVv_61XF_VlzbXITZjWkXfKwCpe5_eb0R-fbyxTXGBPfNP2ZK5s2UAW2FFHGeH1uAnkP5klln_KOjUF9bFx3tZi8Om70-V" title="국보 제32호 해인사 ..." maker="해인사" />
+                            </div>
+                        </section>
+                        <section className="px-4 mt-10">
+                            <div className="flex items-center space-x-2 mb-4">
+                                <h2 className="text-xl font-bold text-[#1A1E27]">믿고 사는 프로젝트</h2>
+                                <span className="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">탑 메이커</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <ProjectCard image="https://lh3.googleusercontent.com/aida-public/AB6AXuCpi4hXs4TQcCn0yMfJ-waIQUYXoQ2qljRIWjeVyliGl7H_lQepacCmq4r6falk8kLpFcZhlyqH_ccvuiw6EFRKWy_ArDu3GFb-Gk29QT4ivtYkrn05kK53s_RBgoFczRrlq0ZTUmDP4nsRHbYEEr6F1Jkdszky-MELVMhIp7s6oKMxC4kR32LBc7Ipt7V0neNRrzzFMQBlmsdudbSHuP7Uir7MgCbWhC5pUVDM43UNrC_Ohzr1NZ3VrJ7N1B2c87tITMSg8iaYFyPd" title="까치호랑이 실크 스카프" maker="탑 메이커 E" />
+                                <ProjectCard image="https://lh3.googleusercontent.com/aida-public/AB6AXuCg70n5iSBHocH4FPWFtk-5NmH9pS-SaNPpLEDeSowR-OfjxWJZ4uYqujj4P2ERSxG-yyYY9kxSitICLJCdYhUMNJHG5luAUCX9bh3fBIYBEbfkFwtEONuMnxn7F9OlKzblnAjiHD5op66MNdn4mGr45YvmaCvDVTIhOziF0mKMbMcXDmnPGg-0XtvTEi56RwbR5MrwQpCuNvRtBcdTbkIIGWNea5NW_lFcQ6xNJ5evSWYrWJ78J4XLAnvjgMSKKzqYuk4_qX1R-p9r" title="거북선 목조 모델" maker="탑 메이커 F" />
+                            </div>
+                        </section>
+                        <section className="px-4 mt-10 mb-8">
+                            <h2 className="text-xl font-bold text-[#1A1E27] mb-4">마감임박 프로젝트</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                <ProjectCard image="https://lh3.googleusercontent.com/aida-public/AB6AXuD_yB_n_ParP5_S8o3_Yqt12chfXdAoV-4iNiucqZKCncbe_aaaeEXnkgzveKSiWXm64y2W6Js5g6Rf0OTNKfk3b-18NSh2NSlFwbVmPx7w8asxR3Tc_uDheTSKyQigwCWlAby_z1PoIkmx2TQ8Ag8RBM5_WwMgSewpbLAFY8-zhT3vY24Fozm4Bn0TuoHdm2sT6EgUWdyWCmNRTbgU8tp3DfhnEoo9uEaxaiwMZoQ-mHZe3joGF6TKH1K2CJk99aSQcAguI4axb0S-" title="백제금동대향로 도록" maker="장인 I" daysLeft={2} />
+                                <ProjectCard image="https://lh3.googleusercontent.com/aida-public/AB6AXuCbe90lJE_jWFdOP73qpqtYWjH31yiAnVF6u6tVuDxsI0_tpRKnz-W_af0E6dIJadImJNG6wmm8c6QqEE23EoUS6cLbTrImdIZeME7AsCKvz9U39VN6K1RkYDuIN5Y_njFHTZblJA_fxUU0rYEBXg3C1HQ0rQsEPruwQzFOAlPEoTmPK9KjX0C4iBf1zSci7Y2kKaF5FE_DvEhu3VkpjPmR1VLYX61Dr8fbJMiQfgmckgu4odgqLx78nEJTN6yDlkR-I-kpl8SFDwIu" title="박물관 로고 에코백" maker="박물관 스토어" daysLeft={3} />
+                            </div>
+                        </section>
+                    </main>
+                    <BottomNav theme="light" />
+                </div>
+            );
+        };
+
+        // FilterScreen Helpers
+        const FilterSection = ({ title, children }) => (
+            <div>
+                <h2 className="text-lg font-bold mb-3 text-text">{title}</h2>
+                <div className="flex flex-wrap gap-2">{children}</div>
+            </div>
+        );
+        const FilterChip = ({ label, active, block }) => (
+            <button className={`px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${block ? 'w-full text-center' : ''} ${active ? 'bg-primary-muted text-background border-primary-muted' : 'bg-surface text-text-secondary border-border hover:border-text-secondary'}`}>
+                {label}
+            </button>
+        );
+
+        // FilterScreen
+        const FilterScreen = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="flex flex-col min-h-screen">
+                    <Header title="Filter" leftIcon="arrow_back_ios_new" rightElements={<><span className="material-symbols-outlined">search</span><span className="material-symbols-outlined ml-4" onClick={() => navigate('/cart')}>shopping_bag</span></>} />
+                    <main className="flex-grow p-4 space-y-8 pb-24">
+                        <FilterSection title="카테고리"><FilterChip label="국립박물관" /><FilterChip label="국립현대" /><FilterChip label="리움" /><FilterChip label="호암" /></FilterSection>
+                        <FilterSection title="종류"><FilterChip label="도서" /><FilterChip label="폰케이스" /><FilterChip label="장패드" /><FilterChip label="그립톡" /><FilterChip label="미니어처" /><FilterChip label="무드등" /><FilterChip label="기타" /></FilterSection>
+                        <FilterSection title="가격"><div className="grid grid-cols-3 gap-2 w-full"><FilterChip label="1만원대" block /><FilterChip label="1-5만원" block /><FilterChip label="10만원 이상" block /></div></FilterSection>
+                        <FilterSection title="상태"><div className="grid grid-cols-3 gap-2 w-full"><FilterChip label="전체" block /><FilterChip label="미개봉" block /><FilterChip label="S급" block /></div></FilterSection>
+                        <FilterSection title="연도"><div className="grid grid-cols-2 gap-2 w-full"><FilterChip label="21년 정규" block /><FilterChip label="20년 인스탁스" block /></div></FilterSection>
+                    </main>
+                    <div className="p-4 sticky bottom-0 bg-background border-t border-border">
+                        <PrimaryButton onClick={() => navigate('/home')} className="!bg-primary-muted text-background">결과 보기</PrimaryButton>
+                    </div>
+                </div>
+            );
+        };
+
+        // ProductDetailScreen
+        const ProductDetailScreen = () => {
+            const { id } = useParams();
+            const navigate = useNavigate();
+            
+            useEffect(() => {
+                window.scrollTo(0, 0);
+            }, [id]);
+            
+            const product = mockProducts.find(p => p.id === id) || {
+                id: '0',
+                title: '뮤지엄 굿즈 포스터',
+                price: 25000,
+                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCbe90lJE_jWFdOP73qpqtYWjH31yiAnVF6u6tVuDxsI0_tpRKnz-W_af0E6dIJadImJNG6wmm8c6QqEE23EoUS6cLbTrImdIZeME7AsCKvz9U39VN6K1RkYDuIN5Y_njFHTZblJA_fxUU0rYEBXg3C1HQ0rQsEPruwQzFOAlPEoTmPK9KjX0C4iBf1zSci7Y2kKaF5FE_DvEhu3VkpjPmR1VLYX61Dr8fbJMiQfgmckgu4odgqLx78nEJTN6yDlkR-I-kpl8SFDwIu',
+                category: '지정물건',
+                description: `2021년 국립중앙박물관 특별 전시 '어느 수집가의 초대' 공식 포스터입니다.\n\n구입 후 암실에서 보관하여 변색이나 손상 없이 상태가 매우 좋습니다. 지관통에 넣어 안전하게 배송해 드립니다.\n\n사이즈: 50 x 70cm`
+            };
+
+            return (
+                <div className="flex flex-col min-h-screen bg-background pb-24">
+                    <Header leftIcon="arrow_back_ios_new" rightElements={<button onClick={() => navigate('/cart')}><span className="material-symbols-outlined">shopping_bag</span></button>} />
+                    <main>
+                        <div className="relative w-full aspect-square bg-surface">
+                            <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+                                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+                                <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-sm text-text-secondary mb-1">{product.category}</p>
+                                    <h1 className="text-2xl font-bold text-text mb-2">{product.title}</h1>
+                                    <p className="text-3xl font-bold text-primary">{product.price.toLocaleString()}원</p>
+                                </div>
+                                <button className="p-2">
+                                    <span className="material-symbols-outlined text-3xl text-text-secondary">favorite</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="border-b border-border mb-6">
+                            <div className="flex px-6 space-x-8">
+                                <button className="pb-3 border-b-2 border-primary text-primary font-bold text-sm">상세 정보</button>
+                                <button className="pb-3 border-b-2 border-transparent text-text-secondary font-medium text-sm">판매자 정보/후기</button>
+                            </div>
+                        </div>
+                        <div className="px-6 text-text-secondary whitespace-pre-wrap leading-relaxed mb-8">{product.description || "상세 설명이 없습니다."}</div>
+                        <div className="h-2 bg-surface w-full mb-8"></div>
+                        <div className="px-6">
+                            <h2 className="text-xl font-bold mb-4">이런 상품은 어때요?</h2>
+                            <div className="grid grid-cols-3 gap-3">
+                                {mockProducts.slice(0, 3).map(rec => (
+                                    <div key={rec.id} className="cursor-pointer" onClick={() => navigate(`/product/${rec.id}`)}>
+                                        <div className="relative aspect-square rounded-lg overflow-hidden mb-2">
+                                            <img src={rec.image} alt={rec.title} className="w-full h-full object-cover" />
+                                            <button className="absolute top-1 right-1 p-1 bg-black/30 rounded-full"><span className="material-symbols-outlined text-sm text-white">favorite</span></button>
+                                        </div>
+                                        <p className="text-xs font-medium text-text truncate">기획 재포장</p>
+                                        <p className="text-xs font-bold text-text-secondary mt-0.5">{rec.price.toLocaleString()}원</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </main>
+                    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-background/95 backdrop-blur-md border-t border-border flex space-x-3 z-30">
+                        <button className="w-14 h-14 rounded-xl bg-surface border border-border text-text-secondary flex items-center justify-center hover:bg-border transition-colors">
+                            <span className="material-symbols-outlined text-2xl">add_shopping_cart</span>
+                        </button>
+                        <button onClick={() => navigate(`/chat/${id || '0'}`)} className="flex-1 bg-surface border border-border text-white font-bold rounded-xl text-lg hover:bg-border transition-colors">채팅하기</button>
+                        <button onClick={() => navigate('/checkout')} className="flex-1 bg-primary text-background font-bold rounded-xl text-lg hover:brightness-110 transition-all">구매하기</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // CartScreen
+        const CartScreen = () => {
+            const navigate = useNavigate();
+            const [items, setItems] = useState([
+                { id: 1, title: "나전칠기 자개소반", price: 25000, image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCmjUow1YtB68FYMsT7emqKnL1_y2wbW4zHAbCzyYKHppktlqwcOsLaf2uBc02_5xYwSVCkFrk9zu6ZHuuiYTm1UigRVDWdaTnJODCeyDLtPBUW7gOEV-LPcrV_gjNfwHHTi1HskoeK8T-7uf6AdFKFhpQnfMzcxfjc0z04ZqHfZlsfezY-LkMvdoN21dinCN5dIZhCbS9nGU-jw1js0-sGg2oW_3PD5iG_KeeKL5gAyXuwGr2_CyoJ9gPEwGrtmTKvp_Q9E33hXC6l", qty: 1 },
+                { id: 2, title: "청자 상감운학문 매병 키링", price: 30000, image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAV5oPKxXm6XUa1vDbr210us0aVUhFtzpAyxk3r2gXt3u533vYXb5C_GlCTIArnBtDnuZzrHay4vytUL3awfDJtuntjUJk2zA1-qn9FtQzdBFsvvsU7-c_CmTJjAUg7P-cM4EIJyhr6VO2FIc76uo5IXKe34p0-HZrPQmv7onSwKEoQxCduoawxoXCMYxx1MIJqNtU7ErkCUtVSD1_HzLU5n7CtVqryxcFRapR5Nq04-CeuEWckCa92jLamN5XxZaAcop4b7It5JUYC", qty: 1 }
+            ]);
+
+            const total = items.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            const shipping = 3000;
+            const grandTotal = total + shipping;
+
+            return (
+                <div className="flex flex-col min-h-screen">
+                    <Header title="장바구니" leftIcon="arrow_back_ios_new" />
+                    <main className="flex-grow p-4 space-y-4">
+                        {items.map((item) => (
+                            <div key={item.id} className="relative flex items-start p-3 rounded-xl border border-primary bg-surface ring-1 ring-primary/50">
+                                <input type="checkbox" defaultChecked className="mt-1 w-5 h-5 rounded border-text-secondary bg-transparent text-primary focus:ring-primary focus:ring-offset-background" />
+                                <div className="ml-3 flex flex-grow gap-3">
+                                    <img src={item.image} alt={item.title} className="w-20 h-20 rounded-lg object-cover bg-background" />
+                                    <div className="flex flex-col justify-between flex-grow">
+                                        <div>
+                                            <h3 className="text-sm font-medium text-text">{item.title}</h3>
+                                            <p className="text-base font-bold text-text mt-1">{item.price.toLocaleString()}원</p>
+                                        </div>
+                                        <div className="flex items-center mt-2">
+                                            <div className="flex items-center border border-border rounded-md bg-background">
+                                                <button className="px-2 py-0.5 text-text-secondary hover:text-white"><span className="material-symbols-outlined text-sm">remove</span></button>
+                                                <span className="px-2 text-sm font-medium">{item.qty}</span>
+                                                <button className="px-2 py-0.5 text-text hover:text-white"><span className="material-symbols-outlined text-sm">add</span></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button className="absolute top-3 right-3 text-text-secondary"><span className="material-symbols-outlined text-lg">close</span></button>
+                            </div>
+                        ))}
+                    </main>
+                    <div className="p-4 bg-background border-t border-border mt-auto">
+                        <div className="space-y-2 mb-4">
+                            <div className="flex justify-between text-sm text-text-secondary"><span>총 상품 금액</span><span>{total.toLocaleString()}원</span></div>
+                            <div className="flex justify-between text-sm text-text-secondary"><span>배송비</span><span>{shipping.toLocaleString()}원</span></div>
+                            <div className="border-t border-border my-2"></div>
+                            <div className="flex justify-between text-lg font-bold text-white"><span>결제 예정 금액</span><span>{grandTotal.toLocaleString()}원</span></div>
+                        </div>
+                        <button onClick={() => navigate('/checkout')} className="w-full bg-primary text-background font-bold py-4 rounded-lg text-lg hover:brightness-110">총 {grandTotal.toLocaleString()}원 구매하기</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // CheckoutScreen
+        const PaymentOption = ({ selected, onClick, label, img, icon }) => (
+            <div onClick={onClick} className={`flex items-center p-3 rounded-lg border bg-surface cursor-pointer transition-all ${selected ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? 'border-primary' : 'border-text-secondary'}`}>
+                    {selected && <div className="w-2 h-2 rounded-full bg-primary"></div>}
+                </div>
+                {img && <img src={img} alt={label} className="h-6 w-6 ml-3 mr-2 object-contain" />}
+                {icon && <span className="material-symbols-outlined ml-3 mr-2 text-text-secondary">{icon}</span>}
+                <span className="text-sm font-medium">{label}</span>
+            </div>
+        );
+
+        const CheckoutScreen = () => {
+            const navigate = useNavigate();
+            const [shippingMethod, setShippingMethod] = useState('delivery');
+            const [paymentMethod, setPaymentMethod] = useState('toss');
+
+            return (
+                <div className="flex flex-col min-h-screen bg-background">
+                    <Header title="거래 및 결제" leftIcon="arrow_back_ios_new" />
+                    <main className="flex-grow p-4 space-y-6 overflow-y-auto">
+                        <section>
+                            <h2 className="text-base font-bold mb-3 text-text">배송지 정보</h2>
+                            <div className="space-y-3">
+                                <div><label className="block text-sm font-medium text-text-secondary mb-1">받는 분</label><input type="text" placeholder="이름" className="w-full rounded-lg border border-border bg-surface px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-secondary/50" /></div>
+                                <div><label className="block text-sm font-medium text-text-secondary mb-1">연락처</label><input type="tel" placeholder="연락처" className="w-full rounded-lg border border-border bg-surface px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-secondary/50" /></div>
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">배송지</label>
+                                    <div className="flex space-x-2 mb-2"><input type="text" placeholder="우편번호" className="flex-grow rounded-lg border border-border bg-surface px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-secondary/50" /><button className="px-4 py-2 border border-border bg-surface rounded-lg text-sm text-text font-medium whitespace-nowrap">주소검색</button></div>
+                                    <input type="text" placeholder="기본주소" className="w-full rounded-lg border border-border bg-surface px-4 py-3 mb-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-secondary/50" />
+                                    <input type="text" placeholder="상세주소" className="w-full rounded-lg border border-border bg-surface px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-secondary/50" />
+                                </div>
+                            </div>
+                        </section>
+                        <div className="h-2 bg-surface -mx-4"></div>
+                        <section>
+                            <h2 className="text-base font-bold mb-3 text-text">배송 방법</h2>
+                            <div className="space-y-3">
+                                <label className={`flex items-center p-4 rounded-lg border bg-surface cursor-pointer transition-all ${shippingMethod === 'delivery' ? 'border-primary ring-1 ring-primary' : 'border-border'}`}><input type="radio" name="shipping" checked={shippingMethod === 'delivery'} onChange={() => setShippingMethod('delivery')} className="w-5 h-5 text-primary bg-transparent border-text-secondary focus:ring-primary focus:ring-offset-background" /><span className="ml-3 text-sm font-medium">택배, 소포, 등기</span></label>
+                                <label className={`flex items-center p-4 rounded-lg border bg-surface cursor-pointer transition-all ${shippingMethod === 'pickup' ? 'border-primary ring-1 ring-primary' : 'border-border'}`}><input type="radio" name="shipping" checked={shippingMethod === 'pickup'} onChange={() => setShippingMethod('pickup')} className="w-5 h-5 text-primary bg-transparent border-text-secondary focus:ring-primary focus:ring-offset-background" /><span className="ml-3 text-sm font-medium">직거래</span></label>
+                            </div>
+                        </section>
+                        <div className="h-2 bg-surface -mx-4"></div>
+                        <section className="pb-8">
+                            <h2 className="text-base font-bold mb-3 text-text">결제 수단</h2>
+                            <div className="grid grid-cols-2 gap-3">
+                                <PaymentOption selected={paymentMethod === 'toss'} onClick={() => setPaymentMethod('toss')} label="Toss" img="https://lh3.googleusercontent.com/aida-public/AB6AXuAhCLuxujFVUlcQIPsSLypo3kPpanhE-bk3t8VjTDk3s9XAfgw8yMMNbyu95I2lCkixS1J4-XhHA-sNe0--I0y3pqB7sjUTaqdznzbNaLOJ4thmVQO4FLZl-M-GZQV8wWe5Efr5zh3aav8qyKyGPGIxQeHNq4j_aecq8HRoZsO5cEAxQ_0AeuQTpKjcqXvo4DScZCfc5nZWhKsGBXQT1iWaLpTiemTlEPiIbuA_9EJAj8ZzJBNZIsbXyKyBmrdV_9aX52_KJaboCHVJ" />
+                                <PaymentOption selected={paymentMethod === 'kakao'} onClick={() => setPaymentMethod('kakao')} label="카카오페이" img="https://lh3.googleusercontent.com/aida-public/AB6AXuAvpRK5M0qFRQ_lK_iiphkmcf2SyR10saThbAaSkqCfAhFFXVuVfm0_A4pETg7bmJAO2qwliCPT9vtCvZ8HY58aC80Z68Kv9p0SPp4XOYJ1j_Y8jigQygGU2rzbdz6NuM2G6EqqPdP_Al6ncdDEkRKrsGOVWmT_eSJrCZqDns-RQ_-FNNt33PjQVPy78sAgw-CURKfO2GBCFBtQJJefdWfHpDKpHtNnaFVwzZhTzATMK12rpPrrbVrydWGCxYDKLkEeF5uv-NHOj6zl" />
+                                <PaymentOption selected={paymentMethod === 'naver'} onClick={() => setPaymentMethod('naver')} label="네이버페이" img="https://lh3.googleusercontent.com/aida-public/AB6AXuDNUPX9XlSK5zx_W0tiAW2q64LNsVShxEmJGOtdAdWNmX3q_tla8zEMUbhS6e5jehFCr6BGeiazLbi5th3lf9pD1RG3NR2aIJCpNwP8EGaw257mWXWTrcnXSVmzqMvG4zEP2hv3XBo2bUyHjXQXTfzKCFSKsuB5A4v4ykFNfUHhAYBoVGldIpGUh0QBBSJy-6XRDgFex_JDIG5pPK8rsJJFZwKBIqJnzlCo3O3RV4cQc-tGJxpg7j5gtltlA6ECCYhBbQQFoNZd5ErQ" />
+                                <PaymentOption selected={paymentMethod === 'card'} onClick={() => setPaymentMethod('card')} label="신용/체크카드" icon="credit_card" />
+                            </div>
+                        </section>
+                    </main>
+                    <div className="p-4 bg-background border-t border-border mt-auto">
+                        <div className="space-y-2 mb-4">
+                            <div className="flex justify-between text-sm text-text-secondary"><span>상품 가격</span><span>55,000원</span></div>
+                            <div className="flex justify-between text-sm text-text-secondary"><span>배송비</span><span>3,000원</span></div>
+                            <div className="border-t border-border my-2"></div>
+                            <div className="flex justify-between text-lg font-bold text-white"><span>총 결제금액</span><span>58,000원</span></div>
+                        </div>
+                        <button className="w-full bg-primary text-background font-bold py-4 rounded-lg text-lg hover:brightness-110">58,000원 결제하기</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // WishlistScreen
+        const WishlistScreen = () => {
+            const navigate = useNavigate();
+            const goBack = useNaturalBack();
+            const wishlistItems = [
+                { id: 'w1', title: '나전칠기 자개 보석함', price: 45000, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCmjUow1YtB68FYMsT7emqKnL1_y2wbW4zHAbCzyYKHppktlqwcOsLaf2uBc02_5xYwSVCkFrk9zu6ZHuuiYTm1UigRVDWdaTnJODCeyDLtPBUW7gOEV-LPcrV_gjNfwHHTi1HskoeK8T-7uf6AdFKFhpQnfMzcxfjc0z04ZqHfZlsfezY-LkMvdoN21dinCN5dIZhCbS9nGU-jw1js0-sGg2oW_3PD5iG_KeeKL5gAyXuwGr2_CyoJ9gPEwGrtmTKvp_Q9E33hXC6l' },
+                { id: 'w2', title: '청자 상감운학문 매병', price: 120000, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAV5oPKxXm6XUa1vDbr210us0aVUhFtzpAyxk3r2gXt3u533vYXb5C_GlCTIArnBtDnuZzrHay4vytUL3awfDJtuntjUJk2zA1-qn9FtQzdBFsvvsU7-c_CmTJjAUg7P-cM4EIJyhr6VO2FIc76uo5IXKe34p0-HZrPQmv7onSwKEoQxCduoawxoXCMYxx1MIJqNtU7ErkCUtVSD1_HzLU5n7CtVqryxcFRapR5Nq04-CeuEWckCa92jLamN5XxZaAcop4b7It5JUYC' },
+                { id: 'w3', title: '반가사유상 미니어처', price: 89000, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD_yB_n_ParP5_S8o3_Yqt12chfXdAoV-4iNiucqZKCncbe_aaaeEXnkgzveKSiWXm64y2W6Js5g6Rf0OTNKfk3b-18NSh2NSlFwbVmPx7w8asxR3Tc_uDheTSKyQigwCWlAby_z1PoIkmx2TQ8Ag8RBM5_WwMgSewpbLAFY8-zhT3vY24Fozm4Bn0TuoHdm2sT6EgUWdyWCmNRTbgU8tp3DfhnEoo9uEaxaiwMZoQ-mHZe3joGF6TKH1K2CJk99aSQcAguI4axb0S-' },
+                { id: 'w4', title: '경천사지 십층석탑 홀더', price: 35000, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCg70n5iSBHocH4FPWFtk-5NmH9pS-SaNPpLEDeSowR-OfjxWJZ4uYqujj4P2ERSxG-yyYY9kxSitICLJCdYhUMNJHG5luAUCX9bh3fBIYBEbfkFwtEONuMnxn7F9OlKzblnAjiHD5op66MNdn4mGr45YvmaCvDVTIhOziF0mKMbMcXDmnPGg-0XtvTEi56RwbR5MrwQpCuNvRtBcdTbkIIGWNea5NW_lFcQ6xNJ5evSWYrWJ78J4XLAnvjgMSKKzqYuk4_qX1R-p9r' },
+                { id: 'w5', title: '전통 산수화 부채', price: 28000, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC7VCV4avmj1suVGVTLL8qjRY591c2lCNL6h7kvgp7X_5Qy2hsd7qSlilmxqhKV-UYp_2sxqI8XGHvAyclS8XK583BFNO3F0BfZPzBT3Ne8vSzNOLEPucA5LWF_oFnhb7zbtvPEekiRjQF9ptylziC4jcbw6ont0a5JMehmHMbDt4GEUpVVv_61XF_VlzbXITZjWkXfKwCpe5_eb0R-fbyxTXGBPfNP2ZK5s2UAW2FFHGeH1uAnkP5klln_KOjUF9bFx3tZi8Om70-V' },
+                { id: 'w6', title: '전통 문양 컵받침 세트', price: 22000, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCSV1yN9ChguxXJGQf-oq6ZfUOBL9hwjibv12dL-Chb-Ck1JUTCTJGm56Ij75orIqTlKDsWInrrMsu4DuFCudcheuYcv96BOH4BDDZ9A52jVwGnutG0qiQfFIPRc68AR-ptJIfNdQXXMR8B4-YMNY5YLatXYZIFtVXdp1IX5DzhNINSuLKp9VLKzVhB7ssMyXXua58kzSjPq1REW1gVj2gPzZjCxsEXqzcvcO3mWHWTaOTosaw440NfS6tVQZ0KYP9LzOhSTEIhOwkb' }
+            ];
+
+            const FilterDropdown = ({ label }) => (
+                <button className="flex items-center space-x-1 px-3 py-1.5 bg-surface rounded-md border border-transparent hover:border-border">
+                    <span className="text-sm text-text">{label}</span>
+                    <span className="material-symbols-outlined text-base">expand_more</span>
+                </button>
+            );
+
+            return (
+                <div className="flex flex-col min-h-screen bg-background pb-24">
+                    <div className="sticky top-0 z-20 flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm">
+                        <button onClick={goBack} className="p-1 -ml-1 text-text"><span className="material-symbols-outlined">arrow_back_ios_new</span></button>
+                        <div className="flex items-center space-x-1 cursor-pointer absolute left-1/2 -translate-x-1/2"><h1 className="text-lg font-bold text-text">찜</h1><span className="material-symbols-outlined text-sm pt-1 bg-surface rounded-full">expand_more</span></div>
+                        <div className="w-6" />
+                    </div>
+                    <main className="px-4">
+                        <div className="flex space-x-3 mb-6 mt-2"><FilterDropdown label="담은순" /><FilterDropdown label="상태" /></div>
+                        <div className="flex justify-between items-center mb-4"><span className="text-sm text-text-secondary">상품 15개</span><button className="text-sm text-text-secondary">편집</button></div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-8">
+                            {wishlistItems.map((item) => (
+                                <div key={item.id} className="cursor-pointer" onClick={() => navigate(`/product/${item.id}`)}>
+                                    <div className="relative aspect-square rounded-lg overflow-hidden bg-surface mb-3">
+                                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                                        <button className="absolute top-2 right-2"><span className="text-xl">❤️</span></button>
+                                    </div>
+                                    <div><h3 className="text-sm font-medium text-text leading-tight mb-1">{item.title}</h3><p className="text-base font-bold text-text">{item.price.toLocaleString()}원</p></div>
+                                </div>
+                            ))}
+                        </div>
+                    </main>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        // MessageScreen
+        const MessageScreen = () => {
+            const navigate = useNavigate();
+            const goBack = useNaturalBack();
+            const messages = [
+                { id: 1, name: '빈티지 جامع', content: '안녕하세요! 문의하신 백자 달항아리 재고 있습...', time: '오후 2:30', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4', online: true },
+                { id: 2, name: '고려청자 사랑', content: '네고 가능한가요? 제가 학생이라서요...', time: '오전 11:54', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Christopher&backgroundColor=c0aede', unreadCount: 1 },
+                { id: 3, name: '박물관굿즈콜렉터', content: '배송은 언제쯤 시작될까요?', time: '어제', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Jessica&backgroundColor=ffdfbf' },
+                { id: 4, name: '사라진보물을찾아서', content: '확인했습니다. 감사합니다!', time: '2일 전', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Sarah&backgroundColor=ffdfbf', online: true },
+                { id: 5, name: '왕관앵무', content: '사진을 보내주셨습니다.', time: '4월 18일', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Amaya&backgroundColor=ffdfbf' }
+            ];
+
+            return (
+                <div className="flex flex-col min-h-screen bg-background pb-24 relative">
+                    <header className="sticky top-0 z-20 flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border/50">
+                        <button onClick={goBack} className="p-1 -ml-1 text-text"><span className="material-symbols-outlined">arrow_back_ios_new</span></button>
+                        <div className="flex items-center space-x-1 cursor-pointer absolute left-1/2 -translate-x-1/2 group"><h1 className="text-lg font-bold text-text">메시지</h1><span className="material-symbols-outlined text-xl text-text-secondary group-hover:text-text transition-colors">expand_more</span></div>
+                        <div className="w-6" />
+                    </header>
+                    <main className="flex-col divide-y divide-border/30">
+                        {messages.map((msg) => (
+                            <div key={msg.id} className="flex items-center p-4 hover:bg-surface/50 transition-colors cursor-pointer" onClick={() => navigate(`/chat/${msg.id}`)}>
+                                <div className="relative mr-4">
+                                    <img src={msg.avatar} alt={msg.name} className="w-14 h-14 rounded-full bg-surface object-cover" />
+                                    {msg.online && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#00C853] border-2 border-background rounded-full"></div>}
+                                </div>
+                                <div className="flex-grow min-w-0">
+                                    <div className="flex justify-between items-baseline mb-1"><h3 className="text-base font-bold text-text truncate pr-2">{msg.name}</h3><span className="text-xs text-text-secondary whitespace-nowrap">{msg.time}</span></div>
+                                    <div className="flex justify-between items-center"><p className={`text-sm truncate pr-4 ${msg.unreadCount ? 'text-text font-medium' : 'text-text-secondary'}`}>{msg.content}</p>{msg.unreadCount && <div className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-[#FF3B30] rounded-full"><span className="text-[10px] font-bold text-white">{msg.unreadCount}</span></div>}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </main>
+                    <button className="fixed bottom-24 right-4 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-200 transition-colors z-30"><span className="material-symbols-outlined text-black text-3xl font-medium">add</span></button>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        // ChatDetailScreen
+        const ChatDetailScreen = () => {
+            const navigate = useNavigate();
+            const { id } = useParams();
+            const goBack = useNaturalBack();
+            const messages = [
+                { id: 1, sender: 'partner', type: 'text', content: '안녕하세요, 청자 아직 구매 가능한가요?', time: '오전 10:00' },
+                { id: 2, sender: 'me', type: 'text', content: '네, 가능합니다!', time: '오전 10:05' },
+                { id: 3, sender: 'partner', type: 'text', content: '상세 사진 볼 수 있을까요?', time: '오전 10:06' },
+                { id: 4, sender: 'me', type: 'image', content: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAV5oPKxXm6XUa1vDbr210us0aVUhFtzpAyxk3r2gXt3u533vYXb5C_GlCTIArnBtDnuZzrHay4vytUL3awfDJtuntjUJk2zA1-qn9FtQzdBFsvvsU7-c_CmTJjAUg7P-cM4EIJyhr6VO2FIc76uo5IXKe34p0-HZrPQmv7onSwKEoQxCduoawxoXCMYxx1MIJqNtU7ErkCUtVSD1_HzLU5n7CtVqryxcFRapR5Nq04-CeuEWckCa92jLamN5XxZaAcop4b7It5JUYC', time: '오전 10:07' },
+                { id: 5, sender: 'partner', type: 'text', content: '좋네요! 구매하겠습니다.', time: '오전 10:08' }
+            ];
+
+            return (
+                <div className="flex flex-col h-screen bg-black">
+                    <header className="sticky top-0 z-20 flex items-center justify-between p-4 bg-black border-b border-white/10">
+                        <button onClick={goBack} className="p-1 -ml-1 text-white"><span className="material-symbols-outlined">arrow_back_ios_new</span></button>
+                        <h1 className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">고려청자 사랑</h1>
+                        <div className="w-6"></div>
+                    </header>
+                    <div className="flex-grow overflow-y-auto p-4 space-y-6">
+                        {messages.map((msg) => (
+                            <div key={msg.id} className={`flex w-full ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
+                                {msg.sender === 'partner' && <div className="mr-3 flex-shrink-0 mt-6"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Christopher&backgroundColor=c0aede" alt="Profile" className="w-10 h-10 rounded-full bg-gray-700 object-cover" /></div>}
+                                <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                                    {msg.sender === 'partner' && <span className="text-sm text-gray-400 mb-1 ml-1">고려청자 사랑</span>}
+                                    {msg.sender === 'me' && <span className="text-sm text-gray-400 mb-1 mr-1">나</span>}
+                                    {msg.type === 'text' && <div className={`px-4 py-3 text-white text-[15px] leading-relaxed ${msg.sender === 'me' ? 'bg-[#3A3A3A] rounded-2xl rounded-tr-none' : 'bg-[#3A3A3A] rounded-2xl rounded-tl-none'}`}>{msg.content}</div>}
+                                    {msg.type === 'image' && <div className="rounded-2xl overflow-hidden bg-[#3A3A3A] p-1"><img src={msg.content} alt="Sent" className="w-full h-auto rounded-xl" /></div>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 bg-black flex items-center space-x-3 pb-safe">
+                        <button className="text-white p-2"><span className="material-symbols-outlined text-2xl">photo_camera</span></button>
+                        <div className="flex-grow bg-[#2C2C2C] rounded-full flex items-center pl-5 pr-2 py-2"><input type="text" placeholder="메시지 입력" className="bg-transparent text-white text-base w-full focus:outline-none placeholder-gray-500" /><button className="ml-2 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-black flex-shrink-0 hover:bg-gray-500 transition-colors"><span className="material-symbols-outlined text-lg">arrow_upward</span></button></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ProfileScreen
+        const ProfileScreen = () => {
+            const navigate = useNavigate();
+            const goBack = useNaturalBack();
+            const QuickActionBtn = ({ icon, label, onClick }) => (
+                <button onClick={onClick} className="flex flex-col items-center space-y-2 group"><div className="w-14 h-14 bg-surface rounded-xl flex items-center justify-center group-active:bg-border transition-colors border border-border/30"><span className="material-symbols-outlined text-2xl text-text-secondary group-hover:text-text">{icon}</span></div><span className="text-xs text-text-secondary">{label}</span></button>
+            );
+            const MenuItem = ({ icon, label }) => (
+                <button className="w-full flex items-center justify-between p-4 hover:bg-surface/30 rounded-lg transition-colors group"><div className="flex items-center space-x-4"><span className="material-symbols-outlined text-text group-hover:text-primary-muted transition-colors">{icon}</span><span className="text-base text-text/90 font-medium">{label}</span></div><span className="material-symbols-outlined text-text-secondary text-sm">arrow_forward_ios</span></button>
+            );
+
+            return (
+                <div className="flex flex-col min-h-screen bg-background pb-24 text-text">
+                    <div className="sticky top-0 z-20 flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm">
+                        <button onClick={goBack} className="p-1 -ml-1 text-text"><span className="material-symbols-outlined">arrow_back_ios_new</span></button>
+                        <button className="p-1 -mr-1 text-text"><span className="material-symbols-outlined">settings</span></button>
+                    </div>
+                    <main className="px-4">
+                        <div className="flex items-center mb-8 mt-2"><div className="w-16 h-16 rounded-full bg-[#E0C183] flex items-center justify-center overflow-hidden mr-4"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Felix" alt="Profile" className="w-full h-full object-cover" /></div><div><h1 className="text-xl font-bold">OOO님 어서오세요.</h1></div></div>
+                        <div className="grid grid-cols-2 gap-3 mb-8"><div className="bg-surface rounded-lg p-5 flex flex-col items-center justify-center text-center"><span className="text-xl font-bold mb-1">1,500P</span><span className="text-xs text-text-secondary">적립금</span></div><div className="bg-surface rounded-lg p-5 flex flex-col items-center justify-center text-center"><span className="text-xl font-bold mb-1">12회</span><span className="text-xs text-text-secondary">구매 횟수</span></div></div>
+                        <div className="flex justify-between items-center mb-4 cursor-pointer"><h2 className="text-lg font-bold">맞춤 정보 관리</h2><span className="material-symbols-outlined text-text-secondary text-sm">arrow_forward_ios</span></div>
+                        <div className="grid grid-cols-4 gap-4 mb-8">
+                            <QuickActionBtn icon="mail" label="메시지" onClick={() => navigate('/messages')} />
+                            <QuickActionBtn icon="history" label="최근 본 상품" />
+                            <QuickActionBtn icon="favorite_border" label="찜한 상품" onClick={() => navigate('/wishlist')} />
+                            <QuickActionBtn icon="rate_review" label="후기 작성" />
+                        </div>
+                        <div className="h-[1px] bg-border mb-4"></div>
+                        <div className="space-y-1"><MenuItem icon="person" label="개인정보" /><MenuItem icon="stars" label="멤버십" /><MenuItem icon="campaign" label="공지사항" /><MenuItem icon="headset_mic" label="고객센터" /><MenuItem icon="description" label="서비스 이용 약관" /><MenuItem icon="info" label="버전 정보" /></div>
+                    </main>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        // --- 5. Main App & Routing ---
+
+        const AppContent = () => {
+            const navigate = useNavigate();
+            const location = useLocation();
+
+            useEffect(() => {
+                if (location.pathname !== '/') {
+                    navigate('/');
+                }
+            }, []);
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-background text-text shadow-2xl relative overflow-hidden">
+                    <Routes>
+                        <Route path="/" element={<LoadingScreen />} />
+                        <Route path="/splash" element={<SplashScreen />} />
+                        <Route path="/login" element={<LoginScreen />} />
+                        <Route path="/home" element={<HomeScreen />} />
+                        <Route path="/zeum" element={<ZeumScreen />} />
+                        <Route path="/filter" element={<FilterScreen />} />
+                        <Route path="/product/:id" element={<ProductDetailScreen />} />
+                        <Route path="/cart" element={<CartScreen />} />
+                        <Route path="/checkout" element={<CheckoutScreen />} />
+                        <Route path="/wishlist" element={<WishlistScreen />} />
+                        <Route path="/messages" element={<MessageScreen />} />
+                        <Route path="/chat/:id" element={<ChatDetailScreen />} />
+                        <Route path="/profile" element={<ProfileScreen />} />
+                    </Routes>
+                </div>
+            );
+        };
+
+        const App = () => {
+            return (
+                <HashRouter>
+                    <AppContent />
+                </HashRouter>
+            );
+        };
+
+        // --- 6. Mount ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
