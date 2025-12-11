@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MU:ZEUM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Jost:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Times+New+Roman&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Noto Sans KR", "sans-serif"],
+              display: ["Jost", "sans-serif"],
+              serif: ["Times New Roman", "serif"],
+            },
+            colors: {
+              background: "#121212",
+              surface: "#1E1E1E", // Slightly lighter for cards/sections
+              border: "#2C2C2C",
+              primary: "#FEEA00", // Vibrant Yellow for actions
+              "primary-muted": "#E0C183", // Gold for branding
+              text: "#FFFFFF",
+              "text-secondary": "#9E9E9E",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #121212;
+        color: #ffffff;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .material-symbols-filled {
+        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
